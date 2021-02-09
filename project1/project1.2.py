@@ -18,6 +18,9 @@ if clientID != -1:
     )
 
     #get object handles and names
+    robot_names=[[i,n] for i,n in enumerate(names) if 'lumibot'==n]
+    obstacle_names=[[i,n] for i,n in enumerate(names) if n in OBSTACLE_MASTERLIST]
+    start_dummy=[[i,n] for i,n in enumerate(names) if n=='Start']
     robot_names = [[i, n] for i, n in enumerate(names) if 'dr20' == n]  #might need to do if dr20 IN n
     obstacle_names = [[i, n] for i, n in enumerate(names) if n in OBSTACLE_MASTERLIST]
     start_dummy = [[i, n] for i, n in enumerate(names) if n == 'Start']
@@ -34,6 +37,19 @@ if clientID != -1:
     maxConfigsForDesiredPose = 10  # we will try to find 10 different states corresponding to the goal pose and order them according to distance from initial state
     maxTrialsForConfigSearch = 300  # a parameter needed for finding appropriate goal states
     searchCount = 2  # how many times OMPL will run for a given task
+    approachVector = [0, 0, 1]# often a linear approach is required. This should also be part of the calculations when selecting an appropriate state for a given pose
+    robotHandle=robot_names[0][0]
+    endHandle=end_dummy[0][0]
+
+    # Get the robot initial position and orientation
+    emptyBuff = bytearray()
+    res, retInts, robotInitPos, retStrings, retBuffer = sim.simxGetObjectPosition(clientID,robotHandle,-1,sim.simx_opmode_streaming)
+    res, retInts, robotInitOr, retStrings, retBuffer = sim.simxGetObjectOrientation(clientID,robotHandle,-1,sim.simx_opmode_streaming)
+
+    #get end dummy position
+    res, retInts, endDumPos, retStrings, retBuffer = sim.simxGetObjectPosition(clientID,endHandle,-1,sim.simx_opmode_streaming)
+
+
 
 # Stop simulation:
 sim.simxStopSimulation(clientID, sim.simx_opmode_oneshot_wait)
