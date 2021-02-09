@@ -1,3 +1,5 @@
+import sys
+sys.path.append('../sim_module')
 import sim
 
 
