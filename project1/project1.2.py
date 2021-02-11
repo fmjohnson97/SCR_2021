@@ -11,11 +11,15 @@ if clientID == -1:
     print('Could not connect remote API server!')
     sys.exit(-1)
 
+print('Connected to remote API server')
+
+### Utility Functions ###
+
 
 def getHandleFromName(name):
     returnCode, handle = sim.simxGetObjectHandle(clientID, name, sim.simx_opmode_blocking)
-    print(name, handle)
-    if returnCode:
+    # print(name, handle)
+    if not returnCode:
         return handle
     else:
         return returnCode
@@ -36,46 +40,93 @@ def getAbsolutePose(handle, mode='stream'):
     return pos, rot
 
 
-print('Connected to remote API server')
+def setAbsolutePose(handle, pos, rot):
+    res1 = sim.simxSetObjectPosition(clientID, handle, -1, pos, sim.simx_opmode_oneshot)
+    # print(res1)
+    res2 = sim.simxSetObjectOrientation(clientID, handle, -1, rot, sim.simx_opmode_oneshot)
+    # print(res2)
+    return res1, res2
+
+
+def computePath(handle):
+    initPos, initRot = getAbsolutePose(handle, 'block')
+
+    emptyBuff = bytearray()
+    res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+        clientID,  # client
+        'lumibot',  # scriptDescription
+        sim.sim_scripttype_childscript,  # scriptHandleOrType
+        'computePath',  # functionName
+        [],  # ints
+        [],  # floats
+        [],  # strings
+        emptyBuff,  # buffer
+        sim.simx_opmode_blocking,
+    )
+    # print(res, retInts, retFloats, retStrings, retBuffer)
+
+    path = []
+    for i in range(0, len(retFloats) - 3, 3):
+        pos = (retFloats[i], retFloats[i + 1], initPos[2])
+        rot = (initRot[0], initRot[1], retFloats[i + 2])
+        path.append((pos, rot))
+
+    return path, retFloats
+
+
+def visualizePath(raw_path):
+    emptyBuff = bytearray()
+    res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+        clientID,  # client
+        'lumibot',  # scriptDescription
+        sim.sim_scripttype_childscript,  # scriptHandleOrType
+        'visualizePath',  # functionName
+        [],  # ints
+        raw_path,  # floats
+        [],  # strings
+        emptyBuff,  # buffer
+        sim.simx_opmode_blocking,
+    )
+    # print(res, retInts, retFloats, retStrings, retBuffer)
+
+    return res
+
+
+def followPath(handle, path):
+
+    # replace with path controller
+
+    for pos, rot in path:
+        setAbsolutePose(handle, pos, rot)
+        time.sleep(0.05)
+
+
+### Simulation  ###
 
 # load the scene
 res = sim.simxLoadScene(clientID, 'scene1.2.ttt', True, sim.simx_opmode_blocking)
 res = sim.simxStartSimulation(clientID, sim.simx_opmode_oneshot)
 
-#get object information
-# res, objs = sim.simxGetObjects(clientID, sim.sim_handle_all, sim.simx_opmode_blocking)
-# res, handles, intData, floatData, names = sim.simxGetObjectGroupData(
-#     clientID, sim.sim_appobj_object_type, 0, sim.simx_opmode_blocking
-# )
-
-#get object handles and names
-# OBSTACLE_MASTERLIST = ['Cylinder', 'Cylinder0', 'Cylinder1', 'Cylinder2', 'Cuboid', 'Cuboid0', 'Cuboid1', 'Cuboid2']
-# robot_names = [[i, n] for i, n in enumerate(names) if n == 'lumibot']
-# obstacle_names = [[i, n] for i, n in enumerate(names) if n in OBSTACLE_MASTERLIST]
-# start_dummy = [[i, n] for i, n in enumerate(names) if n == 'Start']
-# robot_names = [[i, n] for i, n in enumerate(names) if 'dr20' == n]  #might need to do if dr20 IN n
-# obstacle_names = [[i, n] for i, n in enumerate(names) if n in OBSTACLE_MASTERLIST]
-# start_dummy = [[i, n] for i, n in enumerate(names) if n == 'Start']
-# end_dummy = [[i, n] for i, n in enumerate(names) if n == 'End']
-# print(robotHandle)
-# print(obstacle_names)
-# print(start_dummy)
-# print(end_dummy)
-
 # get handles
-# robotHandle = getHandleFromName('lumibot')
+robotHandle = getHandleFromName('lumibot')
 start_dummy = getHandleFromName('Start')
 end_dummy = getHandleFromName('End')
 
 # Get the robot initial position and orientation
-# time.sleep(5)
 startPos, startRot = getAbsolutePose(start_dummy, 'block')
 endPos, endRot = getAbsolutePose(end_dummy, 'block')
-
 print(startPos, startRot)
 print(endPos, endRot)
 
+# compute the path
+path, raw_path = computePath(robotHandle)
+# print(path)
+
+# visualize and follow the path
+visualizePath(raw_path)
+followPath(robotHandle, path)
+
+input("Press Enter to end simulation...\n")
 # Stop simulation:
-input("Press Enter to stop Simulation")
 sim.simxStopSimulation(clientID, sim.simx_opmode_oneshot_wait)
 sim.simxFinish(clientID)
