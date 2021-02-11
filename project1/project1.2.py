@@ -2,6 +2,7 @@ import sys
 sys.path.append('../sim_module')
 import sim
 
+import math
 import time
 
 print('Program started')
@@ -92,13 +93,42 @@ def visualizePath(raw_path):
     return res
 
 
-def followPath(handle, path):
-
-    # replace with path controller
+def followPath(handle, path, left_motor_handle, right_motor_handle):
+    v_des= .1 # total desired velocity of the robot
+    d= 0.0886/2 #distance between the wheels
+    r= 0.024738 #radius of the wheel
+    epsilon=.005 # distance threshold
 
     for pos, rot in path:
-        setAbsolutePose(handle, pos, rot)
-        time.sleep(0.05)
+        robot_pos, robotRot = getAbsolutePose(handle, 'block')
+        distance=((pos[0]-robot_pos[0])**2+(pos[1]-robot_pos[1])**2)**.5
+        while distance>epsilon:
+            # import pdb;
+            # pdb.set_trace()
+
+            angle_diff=math.atan2(pos[1]-robot_pos[1],pos[0]-robot_pos[0])#rot[2]-robotRot[2]
+            w_des = .5*angle_diff  # total desired angular velocity of the robot
+            v_right = v_des + d * w_des
+            v_left = v_des - d * w_des
+            W_right = v_right / r  # angular velocity of the right wheel of the robot
+            W_left = v_left / r  # angular velocity of the left wheel of the robot
+            # print(angle_diff, W_left,W_right)
+            # print(rot,'\t',robotRot)
+            # print(pos, robot_pos)
+            print(distance)
+            res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, -W_left,sim.simx_opmode_oneshot)
+            res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, -W_right,sim.simx_opmode_oneshot)
+            time.sleep(0.025)
+            robot_pos, robotRot = getAbsolutePose(handle, 'block')
+            distance = ((pos[0] - robot_pos[0]) ** 2 + (pos[1] - robot_pos[1]) ** 2) ** .5
+
+    res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, 0, sim.simx_opmode_oneshot)
+    res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, 0, sim.simx_opmode_oneshot)
+
+    # VVV simple forced path following VVV
+    # for pos, rot in path:
+    #     setAbsolutePose(handle, pos, rot)
+    #     time.sleep(0.05)
 
 
 ### Simulation  ###
@@ -112,6 +142,9 @@ robotHandle = getHandleFromName('lumibot')
 start_dummy = getHandleFromName('Start')
 end_dummy = getHandleFromName('End')
 
+left_motor_handle=getHandleFromName('lumibot_leftMotor')
+right_motor_handle=getHandleFromName('lumibot_rightMotor')
+
 # Get the robot initial position and orientation
 startPos, startRot = getAbsolutePose(start_dummy, 'block')
 endPos, endRot = getAbsolutePose(end_dummy, 'block')
@@ -120,11 +153,11 @@ print(endPos, endRot)
 
 # compute the path
 path, raw_path = computePath(robotHandle)
-# print(path)
+print(len(path))
 
 # visualize and follow the path
 visualizePath(raw_path)
-followPath(robotHandle, path)
+followPath(robotHandle, path, left_motor_handle, right_motor_handle)
 
 input("Press Enter to end simulation...\n")
 # Stop simulation:
