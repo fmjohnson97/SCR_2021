@@ -94,10 +94,9 @@ def visualizePath(raw_path):
 
 
 def followPath(handle, path, left_motor_handle, right_motor_handle):
-    v_des = 0.1  # total desired velocity of the robot
     d = 0.0886 / 2  #distance between the wheels
     r = 0.024738  #radius of the wheel
-    epsilon = 0.04  # distance threshold
+    epsilon = 0.06  # distance threshold
 
     for pos, rot in path[::10]:
         robot_pos, robotRot = getAbsolutePose(handle, 'block')
@@ -106,12 +105,18 @@ def followPath(handle, path, left_motor_handle, right_motor_handle):
 
             desired_angle = math.atan2(pos[1] - robot_pos[1], pos[0] - robot_pos[0])
             angle_diff = robotRot[2] - desired_angle - math.pi / 2
-            w_des = 0.8 * angle_diff  # total desired angular velocity of the robot
+            # if abs(angle_diff) > 0.6:
+            #     v_des = 0.0
+            #     w_des = 0.8
+            # else:
+            v_des = 0.05
+            w_des = 0.8
+            w_des *= angle_diff  # total desired angular velocity of the robot
             v_right = v_des - d * w_des
             v_left = v_des + d * w_des
             W_right = v_right / r  # angular velocity of the right wheel of the robot
             W_left = v_left / r  # angular velocity of the left wheel of the robot
-            # print(angle_diff, W_left,W_right)
+            print(angle_diff)
             # print(rot,'\t',robotRot)
             # print(pos, robot_pos)
             # print(distance, angle_diff, robotRot[2])
