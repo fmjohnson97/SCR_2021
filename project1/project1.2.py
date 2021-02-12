@@ -95,11 +95,10 @@ try:
 
         for pos, rot in path[::]:
             robot_pos, robotRot = getAbsolutePose(handle, 'block')
-            distance = ((pos[0] - robot_pos[0])**2 + (pos[1] - robot_pos[1])**2)**.5
-            while distance > epsilon:
+            while math.dist(pos, robot_pos) > epsilon:
 
-                desired_angle = math.atan2(pos[1] - robot_pos[1], pos[0] - robot_pos[0])
-                angle_diff = robotRot[2] - desired_angle - math.pi / 2
+                angle_diff = robotRot[2] - math.atan2(pos[1] - robot_pos[1], pos[0] - robot_pos[0])
+                angle_diff -= math.pi / 2  # robot rotation offset
                 angle_diff = math.remainder(angle_diff, 2 * math.pi)  # bound between [-pi,pi]
                 if abs(angle_diff) > math.pi / 16:
                     v_des = 0.02
@@ -114,9 +113,10 @@ try:
                 W_left = v_left / r  # angular velocity of the left wheel of the robot
                 res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_right, sim.simx_opmode_oneshot)
                 res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, W_left, sim.simx_opmode_oneshot)
+
+                # iterate time step
                 time.sleep(0.025)
                 robot_pos, robotRot = getAbsolutePose(handle, 'block')
-                distance = ((pos[0] - robot_pos[0])**2 + (pos[1] - robot_pos[1])**2)**.5
 
         res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, 0, sim.simx_opmode_oneshot)
         res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, 0, sim.simx_opmode_oneshot)
