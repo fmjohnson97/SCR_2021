@@ -92,6 +92,7 @@ try:
         d = 0.0886 / 2  #distance between the wheels
         r = 0.024738  #radius of the wheel
         epsilon = 0.08  # distance threshold
+        path_length=0
 
         for pos, rot in path[::]:
             robot_pos, robotRot = getAbsolutePose(handle, 'block')
@@ -113,7 +114,7 @@ try:
                 W_left = v_left / r  # angular velocity of the left wheel of the robot
                 res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_right, sim.simx_opmode_oneshot)
                 res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, W_left, sim.simx_opmode_oneshot)
-
+                path_length+=1
                 # iterate time step
                 time.sleep(0.025)
                 robot_pos, robotRot = getAbsolutePose(handle, 'block')
@@ -125,6 +126,8 @@ try:
         # for pos, rot in path:
         #     setAbsolutePose(handle, pos, rot)
         #     time.sleep(0.05)
+
+        return path_length
 
     ### Simulation  ###
 
@@ -152,7 +155,8 @@ try:
 
     # visualize and follow the path
     visualizePath(raw_path)
-    followPath(robotHandle, path, left_motor_handle, right_motor_handle)
+    path_length=followPath(robotHandle, path, left_motor_handle, right_motor_handle)
+    print('Path Length =',path_length)
 
     input("Press Enter to end simulation...\n")
 except KeyboardInterrupt:
