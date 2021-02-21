@@ -1,0 +1,29 @@
+#Controller, without translation:
+import math
+dis=math.sqrt((path_pos[1])^2 + (path_pos[2])^2)
+phi=math.atan2(path_pos[2], path_pos[1])
+
+if pos_on_path < 1 then
+    v_des=0.1
+    om_des=0.8*phi
+else
+    v_des=0
+    om_des=0
+    
+v_des=0.1
+om_des=0.8*phi
+
+d=0.06 #wheels separation
+v_r=(v_des+d*om_des)
+v_l=(v_des-d*om_des)
+
+r_w=0.0275 #wheels radius
+omega_wight=v_r/r_w
+omega_left=v_l/r_w
+simSetJointTargetVelocity(rm, -omega_right)
+simSetJointTargetVelocity)lm, -omega_left)
+
+if (dis<0.1) then
+    pos_on_path= pos_on_path+0.01
+
+simWait(0.025, true)
