@@ -91,10 +91,11 @@ try:
     def followPath(handle, path, left_motor_handle, right_motor_handle):
         d = 0.0886 / 2  #distance between the wheels
         r = 0.024738  #radius of the wheel
-        epsilon = 0.08  # distance threshold
+        epsilon = 0.5  # distance threshold
 
         for pos, rot in path:
             robot_pos, robotRot = getAbsolutePose(handle, 'block')
+            print(math.dist(pos, robot_pos))
             while math.dist(pos, robot_pos) > epsilon:
 
                 angle_diff = robotRot[2] - math.atan2(pos[1] - robot_pos[1], pos[0] - robot_pos[0])
@@ -138,11 +139,26 @@ try:
     for i in range(4):
         doors.append(getHandleFromName('door#'+str(i)))
 
-    humanHandle = getHandleFromName('Bill')
+    humanHandle = getHandleFromName('Bill_base')
 
-    # Code to go to the human's current position
-    #approachHuman(humanHandle, robotHandle, left_motor_handle, right_motor_handle)
+    for i in range(1000):
+        #have the human move one step on its path
+        emptyBuff = bytearray()
+        res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+            clientID,  # client
+            'Bill',  # scriptDescription
+            sim.sim_scripttype_childscript,  # scriptHandleOrType
+            'step',  # functionName
+            [],  # ints
+            [],  # floats
+            [],  # strings
+            emptyBuff,  # buffer
+            sim.simx_opmode_blocking,
+        )
 
+        # Code for lumibot go to the human's current position
+        approachHuman(humanHandle, robotHandle, left_motor_handle, right_motor_handle)
+        # import pdb; pdb.set_trace()
 
 
     input("Press Enter to end simulation...\n")
