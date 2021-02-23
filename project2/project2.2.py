@@ -88,15 +88,15 @@ try:
 
         return res
 
-    def followPath(handle, path, left_motor_handle, right_motor_handle):
+    def followPath(handle, path, followDist, left_motor_handle, right_motor_handle):
         d = 0.0886 / 2  #distance between the wheels
         r = 0.024738  #radius of the wheel
-        epsilon = 0.5  # distance threshold
+        epsilon = followDist # distance threshold
 
         for pos, rot in path:
             robot_pos, robotRot = getAbsolutePose(handle, 'block')
             print(math.dist(pos, robot_pos))
-            while math.dist(pos, robot_pos) > epsilon:
+            while math.dist(pos[:-1], robot_pos[:-1]) > epsilon:
 
                 angle_diff = robotRot[2] - math.atan2(pos[1] - robot_pos[1], pos[0] - robot_pos[0])
                 angle_diff -= math.pi / 2  # robot rotation offset
@@ -121,11 +121,14 @@ try:
         res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, 0, sim.simx_opmode_oneshot)
         res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, 0, sim.simx_opmode_oneshot)
 
-    def approachHuman(humanHandle, robotHandle, left_motor_handle, right_motor_handle):
-        humPos, humRot = getAbsolutePose(humanHandle, 'block')
-        followPath(robotHandle, [[humPos,humRot]], left_motor_handle, right_motor_handle)
+    def approachObject(pos_rot, followDist,robotHandle, left_motor_handle, right_motor_handle):
+        followPath(robotHandle, [pos_rot], followDist, left_motor_handle, right_motor_handle)
 
     ### Simulation  ###
+
+    #set global variables
+    HUMAN_FOLLOW_DIST=.4
+    DOOR_FOLLOW_DIST=.1
 
     # load the scene
     res = sim.simxLoadScene(clientID, 'fivedoors.ttt', True, sim.simx_opmode_blocking)
@@ -136,29 +139,43 @@ try:
     left_motor_handle = getHandleFromName('lumibot_leftMotor')
     right_motor_handle = getHandleFromName('lumibot_rightMotor')
     doors=[getHandleFromName('door')]
+    pathCtrlPoints = []
     for i in range(4):
         doors.append(getHandleFromName('door#'+str(i)))
-
+        pathCtrlPoints.append(getHandleFromName('CtrlPt'+str(i)))
+    pathCtrlPoints.append(getHandleFromName('CtrlPt5'))
     humanHandle = getHandleFromName('Bill_base')
 
+    doorInd=0
     for i in range(1000):
-        #have the human move one step on its path
-        emptyBuff = bytearray()
-        res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
-            clientID,  # client
-            'Bill',  # scriptDescription
-            sim.sim_scripttype_childscript,  # scriptHandleOrType
-            'step',  # functionName
-            [],  # ints
-            [],  # floats
-            [],  # strings
-            emptyBuff,  # buffer
-            sim.simx_opmode_blocking,
-        )
+        #get position of closest door
+        doorPos, doorRot = getAbsolutePose(doors[doorInd], 'block')
+        #get human's position
+        humPos, humRot = getAbsolutePose(humanHandle, 'block')
 
-        # Code for lumibot go to the human's current position
-        approachHuman(humanHandle, robotHandle, left_motor_handle, right_motor_handle)
         # import pdb; pdb.set_trace()
+        # Code for lumibot go to the human's current position
+        approachObject([humPos,humRot], HUMAN_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
+
+        if math.dist(doorPos[:-1],humPos[:-1])>.5:
+            #have the human move one step on its path
+            emptyBuff = bytearray()
+            res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+                clientID,  # client
+                'Bill',  # scriptDescription
+                sim.sim_scripttype_childscript,  # scriptHandleOrType
+                'step',  # functionName
+                [],  # ints
+                [],  # floats
+                [],  # strings
+                emptyBuff,  # buffer
+                sim.simx_opmode_blocking,
+            )
+        else:
+            # Code for lumibot go to the human's current position
+            approachObject([doorPos,doorRot], DOOR_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
+            # ToDo: have robot open the door
+            doorInd+=1
 
 
     input("Press Enter to end simulation...\n")
