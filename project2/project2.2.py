@@ -138,10 +138,10 @@ try:
     robotHandle = getHandleFromName('lumibot')
     left_motor_handle = getHandleFromName('lumibot_leftMotor')
     right_motor_handle = getHandleFromName('lumibot_rightMotor')
-    doors=[getHandleFromName('door')]
+    doors=[getHandleFromName('_doorJoint')]
     pathCtrlPoints = []
-    for i in range(4):
-        doors.append(getHandleFromName('door#'+str(i)))
+    for i in range(1,5):
+        doors.append(getHandleFromName('_doorJoint#'+str(i)))
         pathCtrlPoints.append(getHandleFromName('CtrlPt'+str(i)))
     pathCtrlPoints.append(getHandleFromName('CtrlPt5'))
     humanHandle = getHandleFromName('Bill_base')
