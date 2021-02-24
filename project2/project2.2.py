@@ -127,7 +127,7 @@ try:
     def openDoor(doorHandle):
         r, pos = sim.simxGetJointPosition(clientID, doorHandle, sim.simx_opmode_streaming)
         if (pos == 0):
-            sim.simxSetJointPosition(clientID, doors[doorInd], -90 * math.pi / 180, sim.simx_opmode_oneshot)
+            sim.simxSetJointPosition(clientID, doorHandle, -90 * math.pi / 180, sim.simx_opmode_oneshot)
 
     def humanStep():
         # have the human move one step on its path
