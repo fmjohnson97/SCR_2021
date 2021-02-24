@@ -180,7 +180,7 @@ try:
             
             ##r, pos= simxGetJointPosition(clientID, doors[doorInd])
             ##if (pos == 0):
-            ##    sim.simxSetJointPosition(clientID, doors[doorInd], 90 * math.pi / (-1000 * 180))
+            ##    sim.simxSetJointPosition(clientID, doors[doorInd], -90 * math.pi / 180)
             
             doorInd+=1
 
