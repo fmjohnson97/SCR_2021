@@ -138,10 +138,10 @@ try:
     robotHandle = getHandleFromName('lumibot')
     left_motor_handle = getHandleFromName('lumibot_leftMotor')
     right_motor_handle = getHandleFromName('lumibot_rightMotor')
-    doors=[getHandleFromName('door')]
+    doors=[getHandleFromName('_doorJoint')]
     pathCtrlPoints = []
-    for i in range(4):
-        doors.append(getHandleFromName('door#'+str(i)))
+    for i in range(1,5):
+        doors.append(getHandleFromName('_doorJoint#'+str(i)))
         pathCtrlPoints.append(getHandleFromName('CtrlPt'+str(i)))
     pathCtrlPoints.append(getHandleFromName('CtrlPt5'))
     humanHandle = getHandleFromName('Bill_base')
@@ -174,7 +174,12 @@ try:
         else:
             # Code for lumibot go to the human's current position
             approachObject([doorPos,doorRot], DOOR_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
-            # ToDo: have robot open the door
+          
+            #Robot opens the door if closed:     
+            r, pos= simxGetJointPosition(clientID, doors[doorInd])
+            if (pos == 0):
+                sim.simxSetJointPosition(clientID, doors[doorInd], -90 * math.pi / 180)
+            
             doorInd+=1
 
 
