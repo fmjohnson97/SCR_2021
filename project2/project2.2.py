@@ -175,6 +175,13 @@ try:
             # Code for lumibot go to the human's current position
             approachObject([doorPos,doorRot], DOOR_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
             # ToDo: have robot open the door
+          
+            ###HERE STARTS OPENING THE DOOR:
+            
+            ##r, pos= simxGetJointPosition(clientID, doors[doorInd])
+            ##if (pos == 0):
+            ##    sim.simxSetJointPosition(clientID, doors[doorInd], 90 * math.pi / (-1000 * 180))
+            
             doorInd+=1
 
 
