@@ -47,6 +47,36 @@ try:
         # print(res2)
         return res1, res2
 
+    def getPointAhead():
+        emptyBuff = bytearray()
+        res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+            clientID,  # client
+            'Bill',  # scriptDescription
+            sim.sim_scripttype_childscript,  # scriptHandleOrType
+            'getPointAhead',  # functionName
+            [],  # ints
+            [],  # floats
+            [],  # strings
+            emptyBuff,  # buffer
+            sim.simx_opmode_blocking,
+        )
+        print(res, retInts, retFloats, retStrings, retBuffer)
+        # return retFloats[0]
+
+    def setPause(pause):
+        emptyBuff = bytearray()
+        res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+            clientID,  # client
+            'Bill',  # scriptDescription
+            sim.sim_scripttype_childscript,  # scriptHandleOrType
+            'setPause',  # functionName
+            [pause],  # ints
+            [],  # floats
+            [],  # strings
+            emptyBuff,  # buffer
+            sim.simx_opmode_blocking,
+        )
+
     ### Simulation  ###
 
     # load the scene
@@ -58,10 +88,10 @@ try:
     robotTarget = getHandleFromName('Quadricopter_target')
     humanHandle = getHandleFromName('Bill')
     robot_waypoints = []
-    for i in range(1, 7):
+    for i in range(1, 8):
         pos, rot = getAbsolutePose(getHandleFromName('QT' + str(i)), 'block')
         robot_waypoints.append(pos)
-    robot_waypoints.insert(-1, robot_waypoints[0])
+    robot_waypoints.insert(-2, robot_waypoints[0])
     # print(robot_waypoints)
 
     # interpolate waypoints
@@ -85,6 +115,11 @@ try:
         while math.dist(pos, robot_pos) > epsilon:
             time.sleep(0.025)
             robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
+
+    # follow phase
+    setPause(False)
+    pos = getPointAhead()
+    print(pos)
 
     input("Press Enter to end simulation...\n")
 except KeyboardInterrupt:
