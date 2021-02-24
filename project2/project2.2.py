@@ -124,11 +124,30 @@ try:
     def approachObject(pos_rot, followDist,robotHandle, left_motor_handle, right_motor_handle):
         followPath(robotHandle, [pos_rot], followDist, left_motor_handle, right_motor_handle)
 
+    def openDoor(doorHandle):
+        r, pos = sim.simxGetJointPosition(clientID, doorHandle, sim.simx_opmode_streaming)
+        if (pos == 0):
+            sim.simxSetJointPosition(clientID, doors[doorInd], -90 * math.pi / 180, sim.simx_opmode_oneshot)
+
+    def humanStep():
+        # have the human move one step on its path
+        emptyBuff = bytearray()
+        res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+            clientID,  # client
+            'Bill',  # scriptDescription
+            sim.sim_scripttype_childscript,  # scriptHandleOrType
+            'step',  # functionName
+            [],  # ints
+            [],  # floats
+            [],  # strings
+            emptyBuff,  # buffer
+            sim.simx_opmode_blocking,
+        )
+
     ### Simulation  ###
 
     #set global variables
-    HUMAN_FOLLOW_DIST=.4
-    DOOR_FOLLOW_DIST=.1
+    HUMAN_FOLLOW_DIST=.3
 
     # load the scene
     res = sim.simxLoadScene(clientID, 'fivedoors.ttt', True, sim.simx_opmode_blocking)
@@ -147,43 +166,34 @@ try:
     humanHandle = getHandleFromName('Bill_base')
 
     doorInd=0
-    for i in range(1000):
+    humanWaitDist=[.7,.7,.6,.75,.6]
+    robotDoorDist=[.6,.4,.5,.6,.5]
+    while doorInd<len(doors):
         #get position of closest door
         doorPos, doorRot = getAbsolutePose(doors[doorInd], 'block')
         #get human's position
         humPos, humRot = getAbsolutePose(humanHandle, 'block')
 
         # import pdb; pdb.set_trace()
-        # Code for lumibot go to the human's current position
-        approachObject([humPos,humRot], HUMAN_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
-
-        if math.dist(doorPos[:-1],humPos[:-1])>.5:
-            #have the human move one step on its path
-            emptyBuff = bytearray()
-            res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
-                clientID,  # client
-                'Bill',  # scriptDescription
-                sim.sim_scripttype_childscript,  # scriptHandleOrType
-                'step',  # functionName
-                [],  # ints
-                [],  # floats
-                [],  # strings
-                emptyBuff,  # buffer
-                sim.simx_opmode_blocking,
-            )
+        if math.dist(doorPos[:-1],humPos[:-1])>humanWaitDist[doorInd]:
+            humanStep()
+            approachObject([humPos, humRot], HUMAN_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
         else:
             # Code for lumibot go to the human's current position
-            approachObject([doorPos,doorRot], DOOR_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
-            # ToDo: have robot open the door
-          
-            ###HERE STARTS OPENING THE DOOR:
-            
-            ##r, pos= simxGetJointPosition(clientID, doors[doorInd])
-            ##if (pos == 0):
-            ##    sim.simxSetJointPosition(clientID, doors[doorInd], -90 * math.pi / 180)
-            
+            approachObject([doorPos,doorRot], robotDoorDist[doorInd], robotHandle, left_motor_handle, right_motor_handle)
+            openDoor(doors[doorInd])
             doorInd+=1
+            # import pdb; pdb.set_trace()
+            humanStep()
 
+    humanStep()
+    approachObject([humPos, humRot], HUMAN_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
+    humanStep()
+    approachObject([humPos, humRot], HUMAN_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
+    humanStep()
+    approachObject([humPos, humRot], HUMAN_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
+    humanStep()
+    approachObject([humPos, humRot], HUMAN_FOLLOW_DIST, robotHandle, left_motor_handle, right_motor_handle)
 
     input("Press Enter to end simulation...\n")
 except KeyboardInterrupt:
