@@ -147,7 +147,7 @@ try:
         pos[2] = robot_pos[2]
         setAbsolutePose(robotTarget, pos, robotRot)
         while math.dist(pos, robot_pos) > epsilon:
-            time.sleep(0.025)
+            time.sleep(0.005)
             robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
 
     input("Press Enter to end simulation...\n")
