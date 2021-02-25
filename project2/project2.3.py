@@ -47,21 +47,21 @@ try:
         # print(res2)
         return res1, res2
 
-    def getPointAhead():
+    def getPosOnPath(curpos):
         emptyBuff = bytearray()
         res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
             clientID,  # client
             'Bill',  # scriptDescription
             sim.sim_scripttype_childscript,  # scriptHandleOrType
-            'getPointAhead',  # functionName
+            'getPositionOnPath',  # functionName
             [],  # ints
-            [],  # floats
+            [curpos],  # floats
             [],  # strings
             emptyBuff,  # buffer
             sim.simx_opmode_blocking,
         )
-        print(res, retInts, retFloats, retStrings, retBuffer)
-        # return retFloats[0]
+        # print(res, retInts, retFloats, retStrings, retBuffer)
+        return list(retFloats)
 
     def setPause(pause):
         emptyBuff = bytearray()
@@ -76,6 +76,7 @@ try:
             emptyBuff,  # buffer
             sim.simx_opmode_blocking,
         )
+        # print(res, retInts, retFloats, retStrings, retBuffer)
 
     ### Simulation  ###
 
@@ -88,10 +89,10 @@ try:
     robotTarget = getHandleFromName('Quadricopter_target')
     humanHandle = getHandleFromName('Bill')
     robot_waypoints = []
-    for i in range(1, 8):
+    for i in range(1, 7):
         pos, rot = getAbsolutePose(getHandleFromName('QT' + str(i)), 'block')
         robot_waypoints.append(pos)
-    robot_waypoints.insert(-2, robot_waypoints[0])
+    robot_waypoints.insert(-1, robot_waypoints[0])
     # print(robot_waypoints)
 
     # interpolate waypoints
@@ -111,15 +112,43 @@ try:
     for pos in robot_path:
         robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
         setAbsolutePose(robotTarget, pos, robotRot)
-        # print(math.dist(pos, robot_pos))
         while math.dist(pos, robot_pos) > epsilon:
             time.sleep(0.025)
             robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
 
-    # follow phase
+    time.sleep(1)
+
+    # go infront of human
+    # tpos = getPointAhead()
+    tpos = getPosOnPath(0.1)
+    robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
+    tpos[2] = robot_pos[2]
+    num_points = int(50 * math.dist(robot_pos, tpos))
+    robot_path = list(
+        zip(
+            np.linspace(robot_pos[0], tpos[0], num_points),
+            np.linspace(robot_pos[1], tpos[1], num_points),
+            np.linspace(robot_pos[2], tpos[2], num_points),
+        )
+    )
+    for pos in robot_path:
+        robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
+        setAbsolutePose(robotTarget, pos, robotRot)
+        while math.dist(pos, robot_pos) > epsilon:
+            time.sleep(0.025)
+            robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
+
+    time.sleep(1)
+    # lead the human
     setPause(False)
-    pos = getPointAhead()
-    print(pos)
+    for i in np.linspace(0.1, 1, 200):
+        pos = getPosOnPath(i)
+        robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
+        pos[2] = robot_pos[2]
+        setAbsolutePose(robotTarget, pos, robotRot)
+        while math.dist(pos, robot_pos) > epsilon:
+            time.sleep(0.025)
+            robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
 
     input("Press Enter to end simulation...\n")
 except KeyboardInterrupt:
