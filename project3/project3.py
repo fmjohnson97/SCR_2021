@@ -105,9 +105,6 @@ try:
                 if abs(angle_diff) > math.pi / 16:
                     v_des = 0.02
                     w_des = 1.4
-                elif abs(angle_diff) > math.pi / 8:
-                    v_des = 0.08
-                    w_des = 1.6
                 else:
                     v_des = 0.16
                     w_des = 1.8
