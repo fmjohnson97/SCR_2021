@@ -47,6 +47,22 @@ try:
         # print(res2)
         return res1, res2
 
+    def readSensors():
+        emptyBuff = bytearray()
+        res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+            clientID,  # client
+            'lumibot',  # scriptDescription
+            sim.sim_scripttype_childscript,  # scriptHandleOrType
+            'readSensors',  # functionName
+            [],  # ints
+            [],  # floats
+            [],  # strings
+            emptyBuff,  # buffer
+            sim.simx_opmode_blocking,
+        )
+        # print(res, retInts, retFloats, retStrings, retBuffer)
+        return retFloats
+
     def computePath(handle):
         initPos, initRot = getAbsolutePose(handle, 'block')
 
@@ -90,6 +106,8 @@ try:
         return res
 
     def followPath(handle, path, left_motor_handle, right_motor_handle):
+        braitenbergL = [-0.2, -0.4, -0.6, -0.8, -1, -1.2, -1.4, -1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        braitenbergR = [-1.6, -1.4, -1.2, -1, -0.8, -0.6, -0.4, -0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         d = 0.0381  #/ 2  # distance between the wheels
         r = 0.0975  # radius of the wheel
         epsilon = 0.08  # distance threshold
@@ -98,7 +116,7 @@ try:
         for pos, rot in path[::]:
             robot_pos, robotRot = getAbsolutePose(handle, 'block')
             while math.dist(pos, robot_pos) > epsilon:
-
+                ## steer along path
                 angle_diff = robotRot[2] - math.atan2(pos[1] - robot_pos[1], pos[0] - robot_pos[0])
                 # angle_diff -= math.pi / 2  # robot rotation offset
                 angle_diff = math.remainder(angle_diff, 2 * math.pi)  # bound between [-pi,pi]
@@ -113,6 +131,13 @@ try:
                 v_left = v_des + d * w_des
                 W_right = v_right / r  # angular velocity of the right wheel of the robot
                 W_left = v_left / r  # angular velocity of the left wheel of the robot
+
+                ## avoid obstacles
+                for i, detect in enumerate(readSensors()):
+                    W_right += 0.1 * braitenbergR[i] * detect
+                    W_left += 0.1 * braitenbergL[i] * detect
+
+                ## actuate
                 res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_right, sim.simx_opmode_oneshot)
                 res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, W_left, sim.simx_opmode_oneshot)
                 path_length += 1
