@@ -106,8 +106,6 @@ try:
         return res
 
     def followPath(handle, path, left_motor_handle, right_motor_handle):
-        # braitenbergL = [-0.2, -0.4, -0.6, -0.8, -1, -1.2, -1.4, -1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        # braitenbergR = [-1.6, -1.4, -1.2, -1, -0.8, -0.6, -0.4, -0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         d = 0.0381  #/ 2  # distance between the wheels
         r = 0.0975  # radius of the wheel
         epsilon = 0.08  # distance threshold
@@ -126,18 +124,17 @@ try:
                 else:
                     v_des = 0.16
                     w_des = 1.8
-                w_des *= angle_diff  # total desired angular velocity of the robot
+                w_des *= angle_diff  # toPioneer_p3dx_ultrasonicSensortal desired angular velocity of the robot
                 v_right = v_des - d * w_des
                 v_left = v_des + d * w_des
                 W_right = v_right / r  # angular velocity of the right wheel of the robot
                 W_left = v_left / r  # angular velocity of the left wheel of the robot
 
                 ## avoid obstacles
-                print(readSensors())
-                # for i, detect in enumerate(readSensors()):
-                #     W_right += 0.1 * braitenbergR[i] * detect
-                #     W_left += 0.1 * braitenbergL[i] * detect
-                #     print(i, detect)
+                sensed = readSensors()
+                if sensed[1] > 0.7 or sensed[2] > 0.7:
+                    W_left = 0
+                    W_right = 0
 
                 ## actuate
                 res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_right, sim.simx_opmode_oneshot)
