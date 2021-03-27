@@ -106,8 +106,8 @@ try:
         return res
 
     def followPath(handle, path, left_motor_handle, right_motor_handle):
-        braitenbergL = [-0.2, -0.4, -0.6, -0.8, -1, -1.2, -1.4, -1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        braitenbergR = [-1.6, -1.4, -1.2, -1, -0.8, -0.6, -0.4, -0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        # braitenbergL = [-0.2, -0.4, -0.6, -0.8, -1, -1.2, -1.4, -1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        # braitenbergR = [-1.6, -1.4, -1.2, -1, -0.8, -0.6, -0.4, -0.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         d = 0.0381  #/ 2  # distance between the wheels
         r = 0.0975  # radius of the wheel
         epsilon = 0.08  # distance threshold
@@ -133,9 +133,11 @@ try:
                 W_left = v_left / r  # angular velocity of the left wheel of the robot
 
                 ## avoid obstacles
-                for i, detect in enumerate(readSensors()):
-                    W_right += 0.1 * braitenbergR[i] * detect
-                    W_left += 0.1 * braitenbergL[i] * detect
+                print(readSensors())
+                # for i, detect in enumerate(readSensors()):
+                #     W_right += 0.1 * braitenbergR[i] * detect
+                #     W_left += 0.1 * braitenbergL[i] * detect
+                #     print(i, detect)
 
                 ## actuate
                 res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_right, sim.simx_opmode_oneshot)
