@@ -132,7 +132,7 @@ try:
 
                 ## avoid obstacles
                 sensed = readSensors()
-                if sensed[1] > 0.7 or sensed[2] > 0.7:
+                if sensed[1] > 0.7 and sensed[2] > 0.7:
                     W_left = 0
                     W_right = 0
 
