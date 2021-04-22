@@ -117,10 +117,10 @@ try:
                 W_left = v_left / r  # angular velocity of the left wheel of the robot
 
                 ## avoid obstacles
-                sensed = readSensors()
-                if sensed[1] > 0.7 and sensed[2] > 0.7:
-                    W_left = 0
-                    W_right = 0
+                # sensed = readSensors()
+                # if sensed[1] > 0.7 and sensed[2] > 0.7:
+                #     W_left = 0
+                #     W_right = 0
 
                 ## actuate
                 res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_right, sim.simx_opmode_oneshot)
@@ -141,7 +141,8 @@ try:
         return path_length
 
     def getGoalFromHuman(dummy_list):
-        return random.choice(list(dummy_list.keys()))
+        # return random.choice(list(dummy_list.keys()))
+        return 'R2D2'
 
     ### Simulation  ###
 
