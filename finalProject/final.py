@@ -63,7 +63,7 @@ try:
         # print(res, retInts, retFloats, retStrings, retBuffer)
         return retFloats
 
-    def computePath(handle):
+    def computePath(handle,location):
         initPos, initRot = getAbsolutePose(handle, 'block')
 
         emptyBuff = bytearray()
@@ -106,8 +106,8 @@ try:
         return res
 
     def followPath(handle, path, left_motor_handle, right_motor_handle):
-        d = 0.0381  #/ 2  # distance between the wheels
-        r = 0.0975  # radius of the wheel
+        d = 0.23  #/ 2  # distance between the wheels
+        r = 0.035  # radius of the wheel
         epsilon = 0.08  # distance threshold
         path_length = 0
 
@@ -169,15 +169,10 @@ try:
                   'blue chair':getHandleFromName('Blue_Chair'),
                   'yellow chair':getHandleFromName('Yellow_Chair'),
                   'table':getHandleFromName('Table')}
+    left_motor_handle = getHandleFromName('wheel_left_joint')
+    right_motor_handle = getHandleFromName('wheel_right_joint')
 
-    left_motor_handle = getHandleFromName('lumibot_leftMotor')
-    right_motor_handle = getHandleFromName('lumibot_rightMotor')
 
-    # Get the robot initial position and orientation
-    # startPos, startRot = getAbsolutePose(start_dummy, 'block')
-    # endPos, endRot = getAbsolutePose(end_dummy, 'block')
-    # print(startPos, startRot)
-    # print(endPos, endRot)
 
     # compute the path
     path, raw_path = computePath(robotHandle)
