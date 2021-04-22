@@ -5,6 +5,7 @@ import sim
 
 import math
 import time
+import random
 
 print('Program started')
 sim.simxFinish(-1)  # just in case, close all opened connections
@@ -47,21 +48,6 @@ try:
         # print(res2)
         return res1, res2
 
-    def readSensors():
-        emptyBuff = bytearray()
-        res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
-            clientID,  # client
-            'lumibot',  # scriptDescription
-            sim.sim_scripttype_childscript,  # scriptHandleOrType
-            'readSensors',  # functionName
-            [],  # ints
-            [],  # floats
-            [],  # strings
-            emptyBuff,  # buffer
-            sim.simx_opmode_blocking,
-        )
-        # print(res, retInts, retFloats, retStrings, retBuffer)
-        return retFloats
 
     def computePath(handle,location):
         initPos, initRot = getAbsolutePose(handle, 'block')
@@ -69,12 +55,12 @@ try:
         emptyBuff = bytearray()
         res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
             clientID,  # client
-            'lumibot',  # scriptDescription
+            'Turtlebot2',  # scriptDescription
             sim.sim_scripttype_childscript,  # scriptHandleOrType
             'computePath',  # functionName
             [],  # ints
             [],  # floats
-            [],  # strings
+            [location],  # strings
             emptyBuff,  # buffer
             sim.simx_opmode_blocking,
         )
@@ -92,7 +78,7 @@ try:
         emptyBuff = bytearray()
         res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
             clientID,  # client
-            'lumibot',  # scriptDescription
+            'Turtlebot2',  # scriptDescription
             sim.sim_scripttype_childscript,  # scriptHandleOrType
             'visualizePath',  # functionName
             [],  # ints
@@ -154,28 +140,33 @@ try:
 
         return path_length
 
+    def getGoalFromHuman(dummy_list):
+        return random.choice(list(dummy_list.keys()))
+
     ### Simulation  ###
 
     # load the scene
-    res = sim.simxLoadScene(clientID, 'maze.ttt', True, sim.simx_opmode_blocking)
+    res = sim.simxLoadScene(clientID, 'maze2.ttt', True, sim.simx_opmode_blocking)
     res = sim.simxStartSimulation(clientID, sim.simx_opmode_oneshot)
 
     # get handles
     robotHandle = getHandleFromName('Turtlebot2')
-    dummy_list = {'plant':getHandleFromName('Plant'),
-                  'motorcycle':getHandleFromName('MotorCycle'),
-                  'r2d2':getHandleFromName('R2D2'),
-                  'bathroom':getHandleFromName('Bathroom'),
-                  'blue chair':getHandleFromName('Blue_Chair'),
-                  'yellow chair':getHandleFromName('Yellow_Chair'),
-                  'table':getHandleFromName('Table')}
+    dummy_list = {'Plant':getHandleFromName('Plant'),
+                  'Motorcycle':getHandleFromName('MotorCycle'),
+                  'R2D2':getHandleFromName('R2D2'),
+                  'Bathroom':getHandleFromName('Bathroom'),
+                  'Blue_Chair':getHandleFromName('Blue_Chair'),
+                  'Yellow_Chair':getHandleFromName('Yellow_Chair'),
+                  'Table':getHandleFromName('Table')}
     left_motor_handle = getHandleFromName('wheel_left_joint')
     right_motor_handle = getHandleFromName('wheel_right_joint')
 
+    location=getGoalFromHuman(dummy_list)
+    print(location)
 
 
     # compute the path
-    path, raw_path = computePath(robotHandle)
+    path, raw_path = computePath(robotHandle, location)
     # print(len(path))
 
     # visualize and follow the path
