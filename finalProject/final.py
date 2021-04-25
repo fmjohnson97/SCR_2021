@@ -94,7 +94,7 @@ try:
     def followPath(handle, path, left_motor_handle, right_motor_handle):
         d = 0.23  #/ 2  # distance between the wheels
         r = 0.035  # radius of the wheel
-        epsilon = 0.08  # distance threshold
+        epsilon = 0.5  # distance threshold
         path_length = 0
 
         for pos, rot in path[::]:
@@ -123,8 +123,8 @@ try:
                 #     W_right = 0
 
                 ## actuate
-                res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_right, sim.simx_opmode_oneshot)
-                res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, W_left, sim.simx_opmode_oneshot)
+                res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_left, sim.simx_opmode_oneshot)
+                res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, W_right, sim.simx_opmode_oneshot)
                 path_length += 1
                 # iterate time step
                 time.sleep(0.025)
@@ -141,8 +141,8 @@ try:
         return path_length
 
     def getGoalFromHuman(dummy_list):
-        # return random.choice(list(dummy_list.keys()))
-        return 'R2D2'
+        return random.choice(list(dummy_list.keys()))
+        # return 'R2D2'
 
     ### Simulation  ###
 
