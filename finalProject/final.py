@@ -104,14 +104,14 @@ try:
         return res
 
 
-    def followPath(handle, path, left_motor_handle, right_motor_handle):
+    def followPath(robotHandle, billHandle, path, left_motor_handle, right_motor_handle):
         d = 0.0381  # / 2  # distance between the wheels
         r = 0.0975  # radius of the wheel
         epsilon = 0.08  # distance threshold
         path_length = 0
 
         for pos, rot in path[::]:
-            robot_pos, robotRot = getAbsolutePose(handle, 'block')
+            robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
             while math.dist(pos, robot_pos) > epsilon:
                 ## steer along path
                 angle_diff = robotRot[2] - math.atan2(pos[1] - robot_pos[1], pos[0] - robot_pos[0])
@@ -141,15 +141,41 @@ try:
                 path_length += 1
                 # iterate time step
                 time.sleep(0.025)
-                robot_pos, robotRot = getAbsolutePose(handle, 'block')
+                robot_pos, robotRot = getAbsolutePose(robotHandle, 'block')
+
+            bill_pos, billRot = getAbsolutePose(billHandle, 'block')
+            emptyBuff = bytearray()
+            if math.dist(robot_pos,bill_pos)>.13:
+                res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+                    clientID,  # client
+                    'Bill',  # scriptDescription
+                    sim.sim_scripttype_childscript,  # scriptHandleOrType
+                    'move',  # functionName
+                    [],  # ints
+                    robot_pos,  # floats
+                    [],  # strings
+                    emptyBuff,  # buffer
+                    sim.simx_opmode_blocking,
+                )
 
         res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, 0, sim.simx_opmode_oneshot)
         res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, 0, sim.simx_opmode_oneshot)
 
-        # VVV simple forced path following VVV
-        # for pos, rot in path:
-        #     setAbsolutePose(handle, pos, rot)
-        #     time.sleep(0.05)
+        emptyBuff = bytearray()
+        while math.dist(robot_pos, bill_pos) > .13:
+            res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
+                clientID,  # client
+                'Bill',  # scriptDescription
+                sim.sim_scripttype_childscript,  # scriptHandleOrType
+                'move',  # functionName
+                [],  # ints
+                robot_pos,  # floats
+                [],  # strings
+                emptyBuff,  # buffer
+                sim.simx_opmode_blocking,
+            )
+            bill_pos, billRot = getAbsolutePose(billHandle, 'block')
+
 
         return path_length
 
@@ -214,6 +240,7 @@ try:
 
     # get handles
     robotHandle = getHandleFromName('lumibot')
+    billHandle = getHandleFromName('Bill')
     dummy_list = {'plant':getHandleFromName('Plant'),
                   'motorcycle':getHandleFromName('MotorCycle'),
                   'r2d2':getHandleFromName('R2D2'),
@@ -249,7 +276,7 @@ try:
         print('Ok. Goodbye!')
     else:
         print("Ok. Let's go!")
-        path_length = followPath(robotHandle, path, left_motor_handle, right_motor_handle)
+        path_length = followPath(robotHandle, billHandle, path, left_motor_handle, right_motor_handle)
         print('Path Length =', path_length)
 
     input("Press Enter to end simulation...\n")
