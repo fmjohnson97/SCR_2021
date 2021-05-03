@@ -16,6 +16,17 @@ if clientID == -1:
 
 print('Connected to remote API server')
 
+ENDINGS=['no', 'nope','bye','stop','goodbye','never mind']
+CONFIRMS=['yes','yeah','absolutely']
+MISTAKE_THRESHOLD=.3
+TRANSLATE_CASE={'bathroom':'Bathroom',
+                'r2d2':'R2D2',
+                'plant':'Plant',
+                'blue chair':'Blue_Chair',
+                'yellow chair':'Yellow_Chair',
+                'table':'Table',
+                'motorcycle':'Motorcycle'}
+
 try:
     ### Utility Functions ###
 
@@ -50,12 +61,13 @@ try:
 
 
     def computePath(handle,location):
+        # import pdb; pdb.set_trace()
         initPos, initRot = getAbsolutePose(handle, 'block')
 
         emptyBuff = bytearray()
         res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
             clientID,  # client
-            'Turtlebot2',  # scriptDescription
+            'lumibot',  # scriptDescription
             sim.sim_scripttype_childscript,  # scriptHandleOrType
             'computePath',  # functionName
             [],  # ints
@@ -78,7 +90,7 @@ try:
         emptyBuff = bytearray()
         res, retInts, retFloats, retStrings, retBuffer = sim.simxCallScriptFunction(
             clientID,  # client
-            'Turtlebot2',  # scriptDescription
+            'lumibot',  # scriptDescription
             sim.sim_scripttype_childscript,  # scriptHandleOrType
             'visualizePath',  # functionName
             [],  # ints
@@ -91,10 +103,11 @@ try:
 
         return res
 
+
     def followPath(handle, path, left_motor_handle, right_motor_handle):
-        d = 0.23  #/ 2  # distance between the wheels
-        r = 0.035  # radius of the wheel
-        epsilon = 0.5  # distance threshold
+        d = 0.0381  # / 2  # distance between the wheels
+        r = 0.0975  # radius of the wheel
+        epsilon = 0.08  # distance threshold
         path_length = 0
 
         for pos, rot in path[::]:
@@ -123,8 +136,8 @@ try:
                 #     W_right = 0
 
                 ## actuate
-                res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_left, sim.simx_opmode_oneshot)
-                res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, W_right, sim.simx_opmode_oneshot)
+                res = sim.simxSetJointTargetVelocity(clientID, right_motor_handle, W_right, sim.simx_opmode_oneshot)
+                res = sim.simxSetJointTargetVelocity(clientID, left_motor_handle, W_left, sim.simx_opmode_oneshot)
                 path_length += 1
                 # iterate time step
                 time.sleep(0.025)
@@ -140,9 +153,58 @@ try:
 
         return path_length
 
-    def getGoalFromHuman(dummy_list):
-        return random.choice(list(dummy_list.keys()))
-        # return 'R2D2'
+
+    def getLocFromHuman(dummy_list):
+        # import pdb; pdb.set_trace()
+        # greet the user and get the goal location
+        response = input('Greetings! Where would you like to go?')
+        # account for the human typing somewhere not in the env
+        while response.lower() not in list(dummy_list.keys()):
+            print("I'm sorry. I don't know where that is.")
+            response = input('Please choose another location.')
+            # end the interaction if the human wants to leave
+            if response in ENDINGS:
+                print('Goodbye!')
+                return None
+
+        # determine if we've heard them properly; if not, change the heard location to something else
+        p_heard = random.random()
+        if p_heard < MISTAKE_THRESHOLD:
+            response = random.choice(list(dummy_list.keys()))
+
+        # make sure you have the correct destination
+        confirmation = input("You'd like to go to " + response + '?')
+        if confirmation in ENDINGS:
+            # if not, get the goal location again
+            response = input('Looks like I misheard you. Can you tell me your destination again?')
+            # account for the human typing somewhere not in the env
+            while response.lower() not in list(dummy_list.keys()):
+                print("I'm sorry. I don't know where that is.")
+                response = input('Please choose another location.')
+                # end the interaction if the human wants to leave
+                if response in ENDINGS:
+                    print('Goodbye!')
+                    return None
+        print("Great. Let's go to " + response)
+        return response
+
+    def getPathPreferences():
+        # ask if they need accomodations
+        response = input("Do you have any special mobility accomodations?")
+        if response in ENDINGS:
+            # if not then plan path
+            print('Ok. Planning your path now.')
+            return None
+        # get the obstacles to avoid
+        restrictions = input('Ok. What would you like to avoid?')
+        if response in ENDINGS:
+            # if the human changes their mind then just plan the path
+            print('Ok. Planning your path now.')
+            return None
+        # list obstacles that the user wants to avoid
+        print('Great. Planning a path now that avoids', restrictions)
+        restrictions = restrictions.split(',')
+        return restrictions
 
     ### Simulation  ###
 
@@ -151,29 +213,44 @@ try:
     res = sim.simxStartSimulation(clientID, sim.simx_opmode_oneshot)
 
     # get handles
-    robotHandle = getHandleFromName('Turtlebot2')
-    dummy_list = {'Plant':getHandleFromName('Plant'),
-                  'Motorcycle':getHandleFromName('MotorCycle'),
-                  'R2D2':getHandleFromName('R2D2'),
-                  'Bathroom':getHandleFromName('Bathroom'),
-                  'Blue_Chair':getHandleFromName('Blue_Chair'),
-                  'Yellow_Chair':getHandleFromName('Yellow_Chair'),
-                  'Table':getHandleFromName('Table')}
-    left_motor_handle = getHandleFromName('wheel_left_joint')
-    right_motor_handle = getHandleFromName('wheel_right_joint')
+    robotHandle = getHandleFromName('lumibot')
+    dummy_list = {'plant':getHandleFromName('Plant'),
+                  'motorcycle':getHandleFromName('MotorCycle'),
+                  'r2d2':getHandleFromName('R2D2'),
+                  'bathroom':getHandleFromName('Bathroom'),
+                  'blue chair':getHandleFromName('Blue_Chair'),
+                  'yellow chair':getHandleFromName('Yellow_Chair'),
+                  'table':getHandleFromName('Table')}
+    left_motor_handle = getHandleFromName('lumibot_leftMotor')
+    right_motor_handle = getHandleFromName('lumibot_rightMotor')
 
-    location=getGoalFromHuman(dummy_list)
-    print(location)
 
+    # get location from user
+    location = getLocFromHuman(dummy_list)
+    # key=[d for d in dummy_list.keys() if d==loc.lower()]
+    # location=dummy_list[key[0]]
+    # get obstacles to avoid from user
+    restrictions = getPathPreferences()
 
     # compute the path
-    path, raw_path = computePath(robotHandle, location)
-    # print(len(path))
+    path, raw_path = computePath(robotHandle, TRANSLATE_CASE[location.lower()])
 
     # visualize and follow the path
     visualizePath(raw_path)
-    path_length = followPath(robotHandle, path, left_motor_handle, right_motor_handle)
-    print('Path Length =', path_length)
+
+    # get leading preference from the user
+    leader = input('Would you like me to take you there?')
+    # make sure the user enters yes or no type responses
+    while leader.lower() not in ENDINGS and leader.lower() not in CONFIRMS:
+        print("I'm sorry. I don't understand your response.")
+        leader = input('Would you like me to take you there?')
+
+    if leader in ENDINGS:
+        print('Ok. Goodbye!')
+    else:
+        print("Ok. Let's go!")
+        path_length = followPath(robotHandle, path, left_motor_handle, right_motor_handle)
+        print('Path Length =', path_length)
 
     input("Press Enter to end simulation...\n")
 except KeyboardInterrupt:
